@@ -88,11 +88,8 @@ vector<T>::vector() :
 
 template < typename T >
 vector<T>::vector(vector const & b) :
-	_data((T*)new char[b._size * sizeof(T)]),
-	_size(b._size), _capacity(b._size)
+	vector(b.begin(), b.end())
 {
-	for (size_t i = 0; i < _size; ++i)
-		new (_data + i) T(b._data[i]);
 }
 
 template < typename T >
@@ -105,11 +102,11 @@ vector<T>::vector(vector && b) :
 
 template < typename T >
 vector<T>::vector(size_t n, T const & v) :
-	_data((T*)new char[n * sizeof(T)]),
-	_size(n), _capacity(n)
+	vector()
 {
+	reserve(n);
 	for (size_t i = 0; i < _size; ++i)
-		new (_data + i) T(v);
+		push_back(v);
 }
 
 template < typename T >
@@ -406,18 +403,22 @@ void vector<T>::_setCapacity(size_t n)
 	if (n == _capacity)
 		return;
 	T * newData = (T*)new char[n * sizeof(T)];
-	try
+	for (size_t i = 0; i < _size; ++i)
 	{
-		for (size_t i = 0; i < _size; ++i)
+		try
 		{
-			new (newData + i) T(std::move(_data[i]));
-			_data[i].~T();
+			new (newData + i) T(_data[i]);
+		} catch (...)
+		{
+			for (size_t j = 0; j < i; ++j)
+				newData[j].~T();
+			delete [] (char*)newData;
+			throw;
 		}
-	} catch (...)
-	{
-		delete newData;
-		throw;
 	}
+	for (size_t i = 0; i < _size; ++i)
+		_data[i].~T();
+	delete [] (char*)_data;
 	_data = newData;
 	_capacity = n;
 }

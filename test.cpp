@@ -68,8 +68,12 @@ int main()
 	std::cerr << c << "\n";
 	std::sort(c.begin(), c.end());
 	std::cerr << c << "\n";
-	c.erase(c.begin() + 1, c.begin() + 5);
+	c.erase(c.begin() + 1);
 	std::cerr << c << "\n";
+
+	auto c1 = c;
+	c1.pop_back();
+	std::cerr << c1 << "\n";
 
 	return 0;
 }

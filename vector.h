@@ -288,16 +288,24 @@ template < typename T >
 void vector<T>::push_back(T const & v)
 {
 	if (_size == _capacity)
+	{
+		T v1 = v;
 		_setCapacity(_capacity == 0 ? 1 : (_capacity * 3 + 1) / 2);
-	new (_data + _size++) T(v);
+		new (_data + _size++) T(std::move(v1));
+	} else
+		new (_data + _size++) T(v);
 }
 
 template < typename T >
 void vector<T>::push_back(T && v)
 {
 	if (_size == _capacity)
-		_setCapacity(_nextCapacity(_capacity));
-	new (_data + _size++) T(v);
+	{
+		T v1 = std::move(v);
+		_setCapacity(_capacity == 0 ? 1 : (_capacity * 3 + 1) / 2);
+		new (_data + _size++) T(std::move(v1));
+	} else
+		new (_data + _size++) T(v);
 }
 
 template < typename T >
@@ -309,50 +317,28 @@ void vector<T>::pop_back()
 template < typename T >
 typename vector<T>::iterator vector<T>::insert(iterator it, T const & v)
 {
-	if (it == end())
-	{
-		push_back(v);
-		return end() - 1;
-	}
-	if (_size == _capacity)
-	{
-		size_t pos = it - _data;
-		_setCapacity(_nextCapacity(_capacity));
-		it = _data + pos;
-	}
-	new (_data + _size++) T(std::move(_data[_size - 1]));
-	for (iterator j = end() - 2; j != it; --j)
-		*j = std::move(*(j - 1));
-	*it = v;
-	return it;
+	size_t i = it - begin();
+	push_back(v);
+	for (size_t j = _size - 1; j != i; --j)
+		std::swap(_data[j], _data[j - 1]);
+	return begin() + i;
 }
 
 template < typename T >
 typename vector<T>::iterator vector<T>::insert(iterator it, T && v)
 {
-	if (it == end())
-	{
-		push_back(v);
-		return end() - 1;
-	}
-	if (_size == _capacity)
-	{
-		size_t pos = it - _data;
-		_setCapacity(_nextCapacity(_capacity));
-		it = _data + pos;
-	}
-	new (_data + _size++) T(std::move(_data[_size - 1]));
-	for (iterator j = end() - 2; j != it; --j)
-		*j = std::move(*(j - 1));
-	*it = v;
-	return it;
+	size_t i = it - begin();
+	push_back(v);
+	for (size_t j = _size - 1; j != i; --j)
+		std::swap(_data[j], _data[j - 1]);
+	return begin() + i;
 }
 
 template < typename T >
 typename vector<T>::iterator vector<T>::erase(iterator pos)
 {
 	for (iterator it = pos + 1; it != end(); ++it)
-		*(it - 1) = std::move(*it);
+		std::swap(*(it - 1), *it);
 	pop_back();
 	return pos;
 }
@@ -363,17 +349,13 @@ typename vector<T>::iterator vector<T>::erase(iterator first, iterator last)
 	iterator res = first;
 	while (last != end())
 	{
-		*first = std::move(*last);
+		std::swap(*first, *last);
 		++first;
 		++last;
 	}
 	size_t newSize = first - _data;
-	while (first != end())
-	{
-		first->~T();
-		++first;
-	}
-	_size = newSize;
+	while (_size != newSize)
+		pop_back();
 	return res;
 }
 
@@ -407,7 +389,7 @@ void vector<T>::_setCapacity(size_t n)
 	{
 		try
 		{
-			new (newData + i) T(_data[i]);
+			new (newData + i) T(std::move(_data[i]));
 		} catch (...)
 		{
 			for (size_t j = 0; j < i; ++j)
@@ -474,10 +456,13 @@ bool operator >= (vector<T> const & a, vector<T> const & b)
 	return !(a < b);
 }
 
-template < typename T >
-void swap(vector < T > & a, vector < T > & b)
+namespace std
 {
-	a.swap(b);
+	template < typename T >
+	void swap(vector < T > & a, vector < T > & b)
+	{
+		a.swap(b);
+	}
 }
 
 #endif // __MYVECTOR_H__

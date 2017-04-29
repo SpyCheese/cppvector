@@ -75,5 +75,19 @@ int main()
 	c1.pop_back();
 	std::cerr << c1 << "\n";
 
+	std::cerr << "\n";
+	vector < int > f;
+	f.push_back(4);
+	for (int i = 0; i < 20; ++i)
+		f.push_back(f[0]);
+	std::cerr << f << "\n";
+
+	vector < int > g;
+	for (int i = 0; i < 20; ++i)
+		g.push_back(i*i);
+	std::cerr << g << "\n";
+	g.erase(g.begin() + 2, g.begin() + 10);
+	std::cerr << g << "\n";
+
 	return 0;
 }
